@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lol-ChessIsHere — Demo</title>
+  <link rel="stylesheet" href="Style.css" />
+  <style>
+    /* small page scaffolding to play with the board */
+    body {
+      margin: 24px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#0b0b12 0%, #0e1220 100%);
+      color: #ddd;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      max-width: 520px;
+      background: rgba(14,16,26,0.55);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 6px 30px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .right {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    header h1 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: #fff;
+    }
+    header p { margin: 0 0 12px 0; opacity: 0.9; font-size: 13px; }
+
+    .controls {
+      display:flex;
+      gap:8px;
+      margin-bottom: 8px;
+    }
+    .btn {
+      background: linear-gradient(180deg,#222,#121217);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn.ghost {
+      background: transparent;
+      border: 1px dashed rgba(255,255,255,0.06);
+    }
+
+    .meta {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    footer {
+      grid-column: 1 / -1;
+      margin-top: 18px;
+      color: #bfc7ff;
+      font-size: 13px;
+      opacity: 0.95;
+    }
+
+    /* Make the board responsive alongside your css by constraining max width */
+    .board-wrap {
+      display: grid;
+      gap: 16px;
+      align-items: start;
+    }
+    .chess-board { max-width: calc(var(--square-size) * 8); }
+    @media (max-width: 980px) {
+      body { grid-template-columns: 1fr; }
+      .right { grid-auto-rows: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="board-wrap">
+    <div class="panel">
+      <header>
+        <h1>Lol-ChessIsHere — Playground</h1>
+        <p>A minimal interactive board that uses your Style.css and BigNumbers.js. Click a piece to pick it up, then click a destination square to move (no legality checks).</p>
+      </header>
+
+      <div class="controls">
+        <button id="resetBtn" class="btn">Reset position</button>
+        <button id="toggleOverflow" class="btn ghost">Toggle Overflow</button>
+        <button id="demoMove" class="btn">Demo move</button>
+      </div>
+
+      <div id="boardContainer" class="center">
+        <div id="chessBoard" class="chess-board" aria-label="Chessboard"></div>
+      </div>
+
+      <div style="margin-top:12px" class="meta">
+        <div>Click a piece to select it, then click a target square to move it. The board styling and animations come from <code>Style.css</code>.</div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right">
+    <div class="panel">
+      <h3 style="margin-top:0">BigNumbers Demo</h3>
+      <div id="bigNumDemo" class="meta">Loading BigNumbers demo...</div>
+      <hr style="opacity:.06;margin:12px 0" />
+      <div class="meta" style="font-size:13px">
+        Files used:
+        <ul style="margin:8px 0 0 18px">
+          <li><code>Style.css</code></li>
+          <li><code>BigNumbers.js</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">About</h3>
+      <div class="meta">Repo: <a href="https://github.com/CarterLol-pixel/Lol-ChessIsHere" target="_blank" style="color:#9bdcff">Lol-ChessIsHere</a></div>
+      <div style="margin-top:8px" class="meta">This demo intentionally keeps logic small and easy to extend. You can add move legality, AI, FEN import/export, etc.</div>
+    </div>
+  </aside>
+
+  <footer>
+    <div>Tip: add the class <code>overflow</code> to the body (or click "Toggle Overflow") to see the special effects from Style.css.</div>
+  </footer>
+
+  <!-- Load your repo's BigNumbers and then the inline board script -->
+  <script src="BigNumbers.js"></script>
+
+  <script>
+    // Simple board renderer + move handler (no rules)
+    (function () {
+      const boardEl = document.getElementById('chessBoard');
+      const resetBtn = document.getElementById('resetBtn');
+      const toggleOverflow = document.getElementById('toggleOverflow');
+      const demoMove = document.getElementById('demoMove');
+      const bigNumDemo = document.getElementById('bigNumDemo');
+
+      // Unicode pieces (white uppercase, black lowercase)
+      const UNICODE = {
+        K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
+        k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
+      };
+
+      // initial position (simple FEN-like array)
+      const START = [
+        'r','n','b','q','k','b','n','r',
+        'p','p','p','p','p','p','p','p',
+        '','','','','','','','',
+        '','','','','','','','',
+        '','','','','','','','',
+        '','','','','','','','',
+        'P','P','P','P','P','P','P','P',
+        'R','N','B','Q','K','B','N','R'
+      ];
+
+      // create squares a8 -> h1
+      const files = ['a','b','c','d','e','f','g','h'];
+      const ranks = [8,7,6,5,4,3,2,1];
+      let selectedSquare = null;
+      let boardState = START.slice();
+
+      function squareIndex(fileIdx, rankIdx) {
+        // fileIdx 0..7, rankIdx 0..7 (rank 8..1)
+        return rankIdx * 8 + fileIdx;
+      }
+
+      function renderBoard() {
+        boardEl.innerHTML = '';
+        for (let r = 0; r < 8; r++) {
+          for (let f = 0; f < 8; f++) {
+            const idx = squareIndex(f, r);
+            const sq = document.createElement('div');
+            const isLight = ((f + r) % 2) === 0;
+            sq.className = 'chess-square ' + (isLight ? 'light' : 'dark');
+            const coord = files[f] + ranks[r];
+            sq.setAttribute('data-square', coord);
+
+            if (selectedSquare === coord) sq.classList.add('selected');
+
+            const piece = boardState[idx];
+            if (piece) {
+              const pieceEl = document.createElement('div');
+              pieceEl.className = 'chess-piece ' + (piece === piece.toUpperCase() ? 'piece-white' : 'piece-black') + ' piece-' + piece.toLowerCase();
+              pieceEl.textContent = UNICODE[piece] || piece;
+              pieceEl.setAttribute('data-piece', piece);
+              sq.appendChild(pieceEl);
+            }
+
+            sq.addEventListener('click', onSquareClick);
+            boardEl.appendChild(sq);
+          }
+        }
+      }
+
+      function onSquareClick(e) {
+        const sq = e.currentTarget;
+        const coord = sq.getAttribute('data-square');
+        const idx = coordsToIndex(coord);
+        const piece = boardState[idx];
+
+        // If selecting a piece
+        if (piece) {
+          selectedSquare = coord;
+          renderBoard();
+          return;
+        }
+
+        // If clicked empty square and a source is selected, move piece
+        if (selectedSquare) {
+          const fromIdx = coordsToIndex(selectedSquare);
+          boardState[coordsToIndex(coord)] = boardState[fromIdx];
+          boardState[fromIdx] = '';
+          selectedSquare = null;
+          renderBoard();
+        }
+      }
+
+      function coordsToIndex(coord) {
+        const f = files.indexOf(coord[0]);
+        const r = ranks.indexOf(Number(coord[1]));
+        return r * 8 + f;
+      }
+
+      resetBtn.addEventListener('click', () => {
+        boardState = START.slice();
+        selectedSquare = null;
+        renderBoard();
+      });
+
+      toggleOverflow.addEventListener('click', () => {
+        document.body.classList.toggle('overflow');
+      });
+
+      demoMove.addEventListener('click', () => {
+        // a simple demo move: e2 -> e4
+        const from = coordsToIndex('e2'), to = coordsToIndex('e4');
+        boardState[to] = boardState[from];
+        boardState[from] = '';
+        renderBoard();
+      });
+
+      // init
+      renderBoard();
+
+      // BigNumbers demo: try to use NumbersUpTo1e1000 if available
+      try {
+        // The repository BigNumbers.js defines NumbersUpTo1e1000 in the global script scope.
+        if (typeof NumbersUpTo1e1000 !== 'undefined') {
+          const one = NumbersUpTo1e1000.from('1e1000');
+          const sum = one.add('9.99e999');
+          bigNumDemo.textContent = 'NumbersUpTo1e1000 demo: 1e1000 => ' + one.toString(12) + ' | 1e1000 + 9.99e999 => ' + sum.toString(12);
+        } else if (typeof globalThis !== 'undefined' && typeof globalThis.NumbersUpTo1e1000 !== 'undefined') {
+          const BN = globalThis.NumbersUpTo1e1000;
+          const one = BN.from('1e1000');
+          const sum = one.add('9.99e999');
+          bigNumDemo.textContent = 'NumbersUpTo1e1000 demo: 1e1000 => ' + one.toString(12) + ' | sum => ' + sum.toString(12);
+        } else {
+          bigNumDemo.textContent = 'BigNumbers not available in this page scope (still usable in Node). To use the demo, ensure BigNumbers.js is loaded as a plain script in the page.';
+        }
+      } catch (err) {
+        bigNumDemo.textContent = 'BigNumbers demo error: ' + err.message;
+      }
+    })();
+  </script>
+</body>
+</html>
