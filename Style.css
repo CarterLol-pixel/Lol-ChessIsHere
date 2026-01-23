@@ -1,0 +1,263 @@
+/* Chess board & pieces styles with overflow (1.79e308+) effect
+   - Add the class "overflow" to the .game-container (or <body>) to enable the special effects.
+   - Customize CSS variables at the top.
+*/
+
+:root{
+  /* Board colors */
+  --light-square: #f0d9b5;
+  --dark-square:  #b58863;
+
+  /* Piece colors */
+  --white-piece: #ffffff;
+  --black-piece: #111111;
+
+  /* Glow/overflow colors */
+  --overflow-glow-1: rgba(255, 160, 0, 0.95);
+  --overflow-glow-2: rgba(255, 60, 180, 0.95);
+  --overflow-background: linear-gradient(135deg, rgba(30, 0, 60, 0.85), rgba(5, 5, 40, 0.95));
+
+  /* Sizes */
+  --square-size: 72px;
+  --piece-scale: 0.92;
+
+  /* Animation durations */
+  --pulse-time: 1.2s;
+  --warp-time: 2.8s;
+  --sparkle-time: 1.6s;
+}
+
+/* Board container */
+.chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, var(--square-size));
+  grid-template-rows: repeat(8, var(--square-size));
+  gap: 0;
+  width: calc(var(--square-size) * 8);
+  height: calc(var(--square-size) * 8);
+  border: 6px solid #222;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.02);
+  background: #222;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Individual squares */
+.chess-square {
+  width: var(--square-size);
+  height: var(--square-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--square-size) * 0.65);
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+  transition: background-color 180ms linear;
+}
+
+.chess-square.light {
+  background: var(--light-square);
+}
+
+.chess-square.dark {
+  background: var(--dark-square);
+}
+
+/* Coordinates (optional) */
+.chess-board .coords {
+  position: absolute;
+  inset: 6px;
+  color: rgba(255,255,255,0.06);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* Piece basic appearance (works with text/SVG/icon fonts/images) */
+.chess-piece {
+  width: calc(var(--square-size) * var(--piece-scale));
+  height: calc(var(--square-size) * var(--piece-scale));
+  display: inline-grid;
+  place-items: center;
+  transform-origin: center;
+  transition: transform 160ms cubic-bezier(.2,.9,.2,1), filter 200ms ease, box-shadow 200ms ease;
+  will-change: transform, filter;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+  font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Color Emoji", serif; /* good fallback for chess glyphs */
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* White / Black pieces */
+.piece-white {
+  color: var(--black-piece);
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,245,245,0.95));
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+.piece-black {
+  color: var(--white-piece);
+  background: linear-gradient(180deg, rgba(35,35,35,0.98), rgba(15,15,15,0.98));
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.55), inset 0 -1px 0 rgba(255,255,255,0.02);
+}
+
+/* Piece types for small visual differences */
+.piece-king   { border: 2px solid rgba(0,0,0,0.06); }
+.piece-queen  { transform: translateY(-2%); }
+.piece-rook   { border-radius: 6px; }
+.piece-bishop { transform: rotate(-2deg); }
+.piece-knight { transform: rotate(4deg); }
+.piece-pawn   { transform: translateY(2%); }
+
+/* Hover / active */
+.chess-piece:hover {
+  transform: translateY(-6%) scale(1.04);
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.35));
+  z-index: 5;
+}
+
+/* Selected square highlight */
+.chess-square.selected {
+  outline: 3px solid rgba(255, 210, 90, 0.95);
+  outline-offset: -3px;
+  box-shadow: 0 6px 30px rgba(255,200,60,0.08);
+}
+
+/* Move hint */
+.chess-square.hint::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(40,40,40,0.15);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+/* ---------- Overflow (1.79e308+) visual effects ---------- */
+/* Add .overflow to parent container (e.g. .game-container or body) */
+.overflow .chess-board {
+  animation: board-warp var(--warp-time) ease-in-out infinite alternate;
+  background: var(--overflow-background);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 20px 80px rgba(0,0,0,0.6), 0 0 60px rgba(255,140,40,0.08);
+  filter: saturate(1.2) contrast(1.05);
+}
+
+/* Intensify squares with gradient overlay */
+.overflow .chess-square.light {
+  background-image: linear-gradient(120deg, rgba(255,240,200,0.06), rgba(255,220,150,0.02));
+  transition: background 240ms linear;
+}
+.overflow .chess-square.dark {
+  background-image: linear-gradient(60deg, rgba(0,0,0,0.12), rgba(10,0,30,0.03));
+}
+
+/* Pieces pulse & glow */
+.overflow .chess-piece {
+  animation: piece-pulse var(--pulse-time) ease-in-out infinite;
+  box-shadow:
+    0 0 18px rgba(255,140,40,0.25),
+    0 0 40px rgba(255,60,180,0.08),
+    0 10px 30px rgba(0,0,0,0.5);
+  transform-origin: center;
+  color: #fff;
+  mix-blend-mode: screen;
+}
+
+/* Alternate color tinting for white/black pieces under overflow */
+.overflow .piece-white {
+  background: linear-gradient(180deg, rgba(255,220,120,0.95), rgba(255,160,40,0.95));
+}
+.overflow .piece-black {
+  background: linear-gradient(180deg, rgba(120,0,100,0.95), rgba(30,0,60,0.95));
+}
+
+/* Sparkles using pseudo-elements attached to the board */
+.overflow .chess-board::before,
+.overflow .chess-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.overflow .chess-board::before {
+  background: radial-gradient(circle at 10% 20%, rgba(255,200,80,0.12), transparent 8%),
+              radial-gradient(circle at 85% 80%, rgba(255,60,180,0.08), transparent 6%);
+  animation: sparkle-move var(--sparkle-time) linear infinite;
+  opacity: 0.95;
+}
+
+.overflow .chess-board::after {
+  background: radial-gradient(closest-side, rgba(255,255,255,0.06), transparent 65%);
+  filter: blur(18px);
+  opacity: 0.6;
+  mix-blend-mode: overlay;
+}
+
+/* Subtle piece warp-shake for dramatic effect */
+.overflow .chess-piece {
+  animation:
+    piece-pulse var(--pulse-time) ease-in-out infinite,
+    piece-warp calc(var(--warp-time) * 1.2) cubic-bezier(.6,.0,.4,1) infinite;
+}
+
+/* Small pieces fly-out when overflow toggles on (one-shot feel) */
+.overflow-once .chess-piece {
+  animation: overflow-launch 700ms cubic-bezier(.25,.9,.35,1) forwards;
+}
+
+/* Accessibility: reduce motion prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .chess-piece, .chess-board, .overflow .chess-board::before, .overflow .chess-board::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Keyframes */
+@keyframes piece-pulse {
+  0%   { transform: scale(1); filter: brightness(1); }
+  50%  { transform: scale(1.06); filter: brightness(1.16) saturate(1.1); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes piece-warp {
+  0%   { transform: translateZ(0) rotate(0deg) skew(0deg); }
+  25%  { transform: translateY(-2%) rotate(-0.8deg) skew(-0.4deg); }
+  50%  { transform: translateY(1%) rotate(0.4deg) skew(0.2deg); }
+  75%  { transform: translateY(-1%) rotate(-0.2deg) skew(-0.6deg); }
+  100% { transform: translateZ(0) rotate(0deg) skew(0deg); }
+}
+
+@keyframes board-warp {
+  0%   { transform: perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0); }
+  50%  { transform: perspective(900px) rotateX(1.6deg) rotateY(-1.4deg) translateZ(3px) scale(1.01); }
+  100% { transform: perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0); }
+}
+
+@keyframes sparkle-move {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
+  50%  { transform: translateY(-6%) translateX(-4%) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.85; }
+}
+
+@keyframes overflow-launch {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  70%  { transform: translateY(-12%) scale(1.08); opacity: 0.9; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Helper utility classes (can be used by JS) */
+.hidden { display: none !important; }
+.center { display: grid; place-items: center; }
+
+/* Small responsive sizing */
+@media (max-width: 480px) {
+  :root { --square-size: 40px; }
+  .chess-board { border-width: 3px; border-radius: 6px; }
+  }
